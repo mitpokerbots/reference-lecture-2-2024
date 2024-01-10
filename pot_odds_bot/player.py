@@ -132,7 +132,7 @@ class Player(Bot):
             strength_w_auction = wins_w_auction / (2* iters)
             strength_wo_auction = wins_wo_auction/ (2* iters)
 
-            return strength_w_auction, strength_wo_auction
+        return strength_w_auction, strength_wo_auction
 
 
 
