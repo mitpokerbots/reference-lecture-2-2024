@@ -8,6 +8,10 @@ from skeleton.bot import Bot
 from skeleton.runner import parse_args, run_bot
 import random
 import eval7
+import time
+
+
+preflop_bank  = dict()
 
 
 class Player(Bot):
@@ -57,9 +61,15 @@ class Player(Bot):
         game_clock = game_state.game_clock
         num_rounds = game_state.round_num
 
+
+        # start_time = time.time()
+        # for i in range(10):
+        #     deck = eval7.Deck()
+        #     deck = list(deck)
+        # print("time taken to convert list to deck:", time.time() - start_time)
+
         self.strong_hole = False
         if rank1 == rank2 or (rank1 in "AKQJT9876" and rank2 in "AKQJT9876"):
-            print("if statement reached")
             self.strong_hole = True
         
         monte_carlo_iters = 100
@@ -68,9 +78,7 @@ class Player(Bot):
         self.strength_wo_auction = strength_wo_auction
 
         if num_rounds == NUM_ROUNDS:
-            print(game_clock)
-
-
+            print("game clock:", game_clock)
 
     def calculate_strength(self, my_cards, iters):
         deck = eval7.Deck()
@@ -191,8 +199,8 @@ class Player(Bot):
             max_bid_percentage = 0.40
             min_bid_percentage = 0.15
             bid_percentage = 0.75*strength_diff + 1/100*random.randint(-500,500)
-            bid_percentage = max(min_bid_percentage,bid)
-            bid_percentage = min(max_bid_percentage, bid)
+            bid_percentage = max(min_bid_percentage,bid_percentage)
+            bid_percentage = min(max_bid_percentage, bid_percentage)
             bid = int(pot*bid_percentage)
             return BidAction(bid)
         
@@ -211,13 +219,17 @@ class Player(Bot):
                 strength = self.strength_w_auction
             else:
                 strength = self.strength_wo_auction
+
             raise_ammt = int(my_pip + continue_cost + 0.5*pot)
             raise_cost = int(continue_cost + 0.5*pot)
 
         if RaiseAction in legal_actions and raise_cost <= my_stack:
+
             raise_ammt = max(min_raise,raise_ammt)
             raise_ammt = min(max_raise, raise_ammt)
+
             commit_action = RaiseAction(raise_ammt)
+
         elif CallAction in legal_actions and continue_cost <= my_stack:
             commit_action = CallAction()
         else:
@@ -241,6 +253,9 @@ class Player(Bot):
                 if strength < 0.10 and random.random() < 0.05:
                     if RaiseAction in legal_actions:
                         my_action = commit_action
+                    else:
+                        my_action = FoldAction()
+
                 else:
                     my_action = FoldAction()
 
@@ -251,6 +266,39 @@ class Player(Bot):
                 my_action = CheckAction()
         
         return my_action
+                
+
+
+
+
+
+
+            
+
+        
+
+
+
+
+        if RaiseAction in legal_actions:
+           min_raise, max_raise = round_state.raise_bounds()  # the smallest and largest numbers of chips for a legal bet/raise
+           min_cost = min_raise - my_pip  # the cost of a minimum bet/raise
+           max_cost = max_raise - my_pip  # the cost of a maximum bet/raise
+           print(min_raise, max_raise, my_stack, opp_stack, my_pip, opp_pip)
+        
+        if RaiseAction in legal_actions and len(my_cards) == 3:
+            return RaiseAction(max_raise)
+        if self.strong_hole == True and RaiseAction in legal_actions:
+            raise_amount = min_raise + (max_raise - min_raise) * 0.1
+            return RaiseAction(raise_amount)
+        if CheckAction in legal_actions:
+            return CheckAction()
+        elif BidAction in legal_actions:
+            return BidAction(int(0.5*my_stack)) # random bid between 0 and our stack
+        elif self.strong_hole == False and FoldAction in legal_actions:
+            return FoldAction()
+        return CallAction()
+
 
 if __name__ == '__main__':
     run_bot(Player(), parse_args())
